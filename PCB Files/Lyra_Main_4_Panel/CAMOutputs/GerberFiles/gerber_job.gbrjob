@@ -1,0 +1,24 @@
+{
+    "Header": {
+        "Comment": "All values are metric (mm)",
+        "CreationDate": "2020-10-29T11:39:09Z",
+        "GenerationSoftware": {
+            "Application": "EAGLE",
+            "Vendor": "Autodesk",
+            "Version": "9.6.0"
+        },
+        "Part": "Single"
+    },
+    "Overall": {
+        "BoardThickness": 1.671119,
+        "LayerNumber": 2,
+        "Name": {
+            "ProjectId": "LyraDoubleJLC"
+        },
+        "Owner": "Andrew Levine <andydandy4001@gmail.com>",
+        "Size": {
+            "X": 83,
+            "Y": 27
+        }
+    }
+}

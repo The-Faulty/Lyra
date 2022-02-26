@@ -1,0 +1,24 @@
+{
+    "Header": {
+        "Comment": "All values are metric (mm)",
+        "CreationDate": "2020-10-29T21:32:24Z",
+        "GenerationSoftware": {
+            "Application": "EAGLE",
+            "Vendor": "Autodesk",
+            "Version": "9.6.0"
+        },
+        "Part": "Single"
+    },
+    "Overall": {
+        "BoardThickness": 1.671119,
+        "LayerNumber": 2,
+        "Name": {
+            "ProjectId": "dataOut_2x2"
+        },
+        "Owner": "Andrew Levine <andydandy4001@gmail.com>",
+        "Size": {
+            "X": 41,
+            "Y": 55
+        }
+    }
+}
