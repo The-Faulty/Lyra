@@ -1,7 +1,6 @@
 #include <Wire.h>
 #include <SPI.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BMP3XX.h>
+#include <MS5x.h>
 #include <SPIMemory.h>
 #include <SD.h>
 #include <errors.h>
@@ -13,19 +12,26 @@
 #define BUZZER 7
 #define SD_CS 10
 
-Adafruit_BMP3XX bmp;
+MS5x baro(&Wire);
 SPIFlash flash;
 File myFile;
 
+//User defined variables
+#define MINALT 200                                                          //Minimum altitude for flight detection
+#define ROLLAVGLENG 10                                                      //Defines the length of the roling average
+
+int period;                                                                 //period inbetween program loops
+int lastMillis = 0;                                                         //last time loop was run
+
 float gndPres;                                                              //Pressure at the launch site ground
 float curAlt;                                                               //Current altitude
-float rollAvg[10];                                                          //Used to take a roling average of altitude data
+float curPress;                                                             //Current pressure
+float rollAvg[ROLLAVGLENG];                                                 //Used to take a roling average of altitude data
 float maxAlt;                                                               //Stores the max altitude 
-float minAlt = 200;                                                         //Minimum altitude for flight detection
-float avgAlt;
 
-int rollAvgLeng = 10;                                                       //Defines the length of the roling average
-int rollIndex = 0;
+float avgAlt;                                                               //Altitude after using the rolling average
+float avgRate;                                                              //Average Verticale speed
+int rollIndex = 0;                                                          //Used to loop through the 
 int timesLessThan = 0;                                                      //Used to ensure apogee has been reached, when over 10
 
 bool hasDrogue = false;                                                     //Will read the settings from sd card -- will there be a drogue period
@@ -51,10 +57,12 @@ int state;
 #pragma pack(1)                                                             //tells compiler to pack the variables together with no weird spacing issues that there would otherwise be
 
 struct LoggerVars {                                                         //Struct for data logging
+  float pressure;
   float alt;
   float filtAlt;
-  float battVolt;
+  float rate;
   int curState;
+  float battVolt;
   uint32_t time;
 };
 
