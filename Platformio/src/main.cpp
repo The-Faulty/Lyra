@@ -5,20 +5,29 @@
 #include <Arduino.h>
 #include <vars.h>
 
+//Function Prototypes
+void readAlt();
+void calcRate();
+void logData();
+bool isApogee();
+
 void setup() {
   state = startUp;
 
   pinMode(VOLT, INPUT);
   pinMode(BUZZER, OUTPUT);
 
+  tone(BUZZER, NOTE_E7, 200);
+  //digitalWrite(BUZZER, HIGH);
+
   flash.begin();
   SD.begin(SD_CS);
 
   while (baro.connect() > 0) {
-    tone(NOTE_c4);
+    tone(BUZZER, NOTE_C7, 200);
     delay(250);
   }
-  baro.setSamples(MS5XXX_CMD_ADC_4096);   //This is the lib's default setting, but I have this to confirm that is the setting
+  baro.setSamples(MS5xxx_CMD_ADC_4096);   //This is the lib's default setting, but I have this to confirm that is the setting
   baro.setPressPa();    //Set pressure readings to pascals (my preference and needed for the offset)
   //Set the launch site offset
   baro.checkUpdates();
@@ -26,9 +35,9 @@ void setup() {
   gndPres = baro.GetPres();
   baro.setPOffset(gndPres);
 
-  tone(BUZZER, NOTE_E4, 100);
+  tone(BUZZER, NOTE_E7, 100);
   delay(100);
-  tone(BUZZER, NOTE_E4, 100);
+  tone(BUZZER, NOTE_E7, 100);
 
   //Startup Complete!
 
@@ -74,6 +83,7 @@ void loop() {
         //finalize stuff
         break;
     }
+  }
 } 
 
 void readAlt() {
@@ -88,7 +98,7 @@ void readAlt() {
   for (int i = 0; i < ROLLAVGLENG - 1; i++) {
     bufferArray[i + 1] = rollAvg[i];
   }
-  memcpy(rollAvg, bufferArray, sizeOf(bufferArray));
+  memcpy(rollAvg, bufferArray, sizeof(bufferArray));
 
   /*for (int i = 0; i < ROLLAVGLENG - 1; i++) {
     avgAlt += rollAvg[i];

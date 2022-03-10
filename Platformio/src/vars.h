@@ -3,6 +3,7 @@
 #include <MS5x.h>
 #include <SPIMemory.h>
 #include <SD.h>
+#include <SDU.h>
 #include <errors.h>
 
 #define CONT1 A3
