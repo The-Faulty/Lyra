@@ -8,20 +8,30 @@
 void setup() {
   state = startUp;
 
+  pinMode(VOLT, INPUT);
+  pinMode(BUZZER, OUTPUT);
+
   flash.begin();
   SD.begin(SD_CS);
 
   while (baro.connect() > 0) {
-    //indicate lack of connection like beeps
-    delay(100);
+    tone(NOTE_c4);
+    delay(250);
   }
+  baro.setSamples(MS5XXX_CMD_ADC_4096);   //This is the lib's default setting, but I have this to confirm that is the setting
+  baro.setPressPa();    //Set pressure readings to pascals (my preference and needed for the offset)
+  //Set the launch site offset
   baro.checkUpdates();
   while (!baro.isReady()); // just waiting for the readings
   gndPres = baro.GetPres();
   baro.setPOffset(gndPres);
 
-  pinMode(VOLT, INPUT);
-  
+  tone(BUZZER, NOTE_E4, 100);
+  delay(100);
+  tone(BUZZER, NOTE_E4, 100);
+
+  //Startup Complete!
+
   state = idle;
 }
 
@@ -29,49 +39,61 @@ void loop() {
   period = millis() - lastMillis;
   lastMillis = millis();
 
-  baro.checkUpdates();
-  if (baro.isReady()) {
-    if (state == idle)
-    {
-      readAlt();
-      //should I put some logging in here? not really sure, I'll come back to it
-      if (avgAlt > MINALT) state = liftOff;
-    }
-    else if (state == liftOff) {
-      readAlt();
-      logData();
-      //detect burnout
-    }
-    else if (state == burnOut)
-    {
-      readAlt();
-      if (isApogee());
-    }
-    else if (state == apogee) {
-      //should this really be a state? maybe a boolean would fit better idk
-    }
-    else if (state == descent) {
-      //do stuff for average descent rate ---- make a descent rate function?
-    }
-    else if (state == drogue) {
-      //more descent rate calculations
-    }
-    else if (state == mains) {
-      //some detect landing function
-    }
+  if (millis() - lastReadingMillis >= 100) { 
+    baro.checkUpdates();
+    lastReadingMillis = millis();
   }
-}
+  if (baro.isReady()) {
+    readAlt();
+    calcRate();
+    switch (state) {
+      case idle:
+        //should I put some logging in here? not really sure, I'll come back to it
+        if (avgAlt > MINALT) state = liftOff;
+        break;
+      case liftOff:
+        logData();
+        //detect burnout
+        break;
+      case burnOut:
+        if (isApogee());
+        break;
+      case apogee:
+        //should this really be a state? maybe a boolean would fit better idk
+        break;
+      case descent:
+        //do stuff for average descent rate ---- make a descent rate function?
+        break;
+      case drogue:
+        //more descent rate calculations
+        break;
+      case mains:
+        //some detect landing function
+        break;
+      case landed:
+        //finalize stuff
+        break;
+    }
+} 
 
 void readAlt() {
   curAlt = baro.getAltitude(true);
-  rollAvg[rollIndex] = curAlt;
+  /*rollAvg[rollIndex] = curAlt;
   if (rollIndex >= 9) rollIndex = 0;
-  else rollIndex++;
+  else rollIndex++;*/
+
+  int bufferArray[ROLLAVGLENG];
+  bufferArray[0] = curAlt;
 
   for (int i = 0; i < ROLLAVGLENG - 1; i++) {
+    bufferArray[i + 1] = rollAvg[i];
+  }
+  memcpy(rollAvg, bufferArray, sizeOf(bufferArray));
+
+  /*for (int i = 0; i < ROLLAVGLENG - 1; i++) {
     avgAlt += rollAvg[i];
   }
-  avgAlt /= ROLLAVGLENG - 1;
+  avgAlt /= ROLLAVGLENG - 1;*/
 }
 
 void calcRate() {
@@ -91,7 +113,12 @@ void calcRate() {
       avgRate += (rollAvg[i + 1] - rollAvg[i]) / (period / 1000);
     }
   }
-  avgRate /= ROLLAVGLENG - 2;
+  /*
+  ______________________________________________________________
+  Once again need to rewrite this, change to using lastReadingMillis and write for not using the 
+  */
+
+  avgRate /= ROLLAVGLENG - 1;
 }
 
 float getBattVoltage() {   //This doesnt need to be a function, but I think it will aid in code readability so why not
