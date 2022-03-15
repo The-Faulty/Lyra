@@ -13,10 +13,6 @@
 #define BUZZER 7
 #define SD_CS 10
 
-MS5x baro(&Wire);
-SPIFlash flash;
-File myFile;
-
 //User defined variables
 #define MINALT 200                                                          //Minimum altitude for flight detection
 #define ROLLAVGLENG 10                                                      //Defines the length of the roling average
@@ -24,6 +20,10 @@ File myFile;
 #define ISAPOGEEDEPLOY false                                                //Set true if you want Lyra to deploy parachutes at apogee
 #define DEPLOYALT 500                                                       //Sets the deployment altitude, ignore if using apogee deployment
 #define SAVEDATA false                                                      //Mainly for testing purposes
+
+MS5x baro(&Wire);
+SPIFlash flash;
+File myFile;
 
 int period;                                                                 //Period between program loops
 int lastMillis;                                                             //Last time loop was run
@@ -34,6 +34,7 @@ float gndPres;                                                              //Pr
 float curAlt;                                                               //Current altitude
 float curPress;                                                             //Current pressure
 float rollAvg[ROLLAVGLENG];                                                 //Used to take a roling average of altitude data
+float
 float maxAlt;                                                               //Stores the max altitude 
 
 float avgAlt;                                                               //Altitude after using the rolling average
@@ -42,6 +43,12 @@ int rollIndex = 0;                                                          //Us
 int timesLessThan = 0;                                                      //Used to ensure apogee has been reached, when over 10
 
 uint32_t flashIndex = 0;                                                    //Index where to write data to flash
+
+//Function Prototypes
+void readAlt();
+void calcRate();
+void logData();
+bool isApogee();
 
 enum stateMachine {                                                         //State machine 
   startUp,

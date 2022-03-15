@@ -5,35 +5,38 @@
 #include <Arduino.h>
 #include <vars.h>
 
-//Function Prototypes
-void readAlt();
-void calcRate();
-void logData();
-bool isApogee();
-
 void setup() {
   state = startUp;
 
   pinMode(VOLT, INPUT);
   pinMode(BUZZER, OUTPUT);
 
-  tone(BUZZER, NOTE_E7, 200);
-  //digitalWrite(BUZZER, HIGH);
-
-  flash.begin();
-  SD.begin(SD_CS);
+  //USING DIGITAL WRITE TO CONTROL AN LED THAT WAS BODGED ONTO THE PIN
+  //tone(BUZZER, NOTE_E7, 200);
+  digitalWrite(BUZZER, HIGH);
+  delay(500);
+  digitalWrite(BUZZER, LOW);
 
   while (baro.connect() > 0) {
-    tone(BUZZER, NOTE_C7, 200);
-    delay(250);
+    //tone(BUZZER, NOTE_C7, 200);
+    digitalWrite(BUZZER, HIGH);
+    delay(500);
+    digitalWrite(BUZZER, LOW);
+    delay(500);
   }
+
   baro.setSamples(MS5xxx_CMD_ADC_4096);   //This is the lib's default setting, but I have this to confirm that is the setting
-  baro.setPressPa();    //Set pressure readings to pascals (my preference and needed for the offset)
+  baro.setPressPa();                      //Set pressure readings to pascals (my preference and needed for the offset)
+  barometer.setDelay(10);
+
   //Set the launch site offset
   baro.checkUpdates();
   while (!baro.isReady()); // just waiting for the readings
   gndPres = baro.GetPres();
   baro.setPOffset(gndPres);
+
+  flash.begin();
+  SD.begin(SD_CS);
 
   tone(BUZZER, NOTE_E7, 100);
   delay(100);
@@ -115,7 +118,7 @@ void calcRate() {
       avgRate += (rollAvg[i + 1] - rollAvg[i]) / (period / 1000);
     }
   }
-  I think the below code will work better than what I was trying ot figure out above */
+  I think the below code will work better than what I was trying ot figure out above
   for (int i = 0; i < ROLLAVGLENG - 1; i++) {
     if (i + 1 == rollIndex) {
       avgRate += (rollAvg[0] - rollAvg[ROLLAVGLENG - 1]) / (period / 1000);
@@ -127,6 +130,9 @@ void calcRate() {
   ______________________________________________________________
   Once again need to rewrite this, change to using lastReadingMillis and write for not using the 
   */
+  for (int i = 1; i < ROLLAVGLENG - 1; i++) {
+    avgRate += (rollAvg[0] - rollAvg[ROLLAVGLENG - 1]) / (lastReadingMillis / 1000);
+  }
 
   avgRate /= ROLLAVGLENG - 1;
 }
