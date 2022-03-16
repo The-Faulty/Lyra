@@ -25,7 +25,7 @@ void setup() {
     delay(500);
   }
 
-  baro.setSamples(MS5xxx_CMD_ADC_4096);   //This is the lib's default setting, but I have this to confirm that is the setting
+  baro.setSamples(MS5xxx_CMD_ADC_2048);
   baro.setPressPa();                      //Set pressure readings to pascals (my preference and needed for the offset)
   barometer.setDelay(10);
 
@@ -91,17 +91,18 @@ void loop() {
 
 void readAlt() {
   curAlt = baro.getAltitude(true);
-  /*rollAvg[rollIndex] = curAlt;
-  if (rollIndex >= 9) rollIndex = 0;
-  else rollIndex++;*/
+  rollPeriod
 
-  int bufferArray[ROLLAVGLENG];
-  bufferArray[0] = curAlt;
+  int bufferAlt[ROLLAVGLENG], bufferPeriod[ROLLAVGLENG];
+  bufferAlt[0] = curAlt;
+  bufferPeriod[0] = millis() - lastReadingMillis;
 
-  for (int i = 0; i < ROLLAVGLENG - 1; i++) {
-    bufferArray[i + 1] = rollAvg[i];
+  for (int i = 0; i < ROLLAVGLENG; i++) {
+    bufferAlt[i + 1] = rollAvg[i];
+    bufferPeriod[i + 1] = rollPeriod[i];
   }
-  memcpy(rollAvg, bufferArray, sizeof(bufferArray));
+  memcpy(rollAvg, bufferAlt, sizeof(bufferAlt));
+  memcpy(rollPeriod, bufferPeriod, sizeof(bufferPeriod));
 
   /*for (int i = 0; i < ROLLAVGLENG - 1; i++) {
     avgAlt += rollAvg[i];
@@ -110,28 +111,8 @@ void readAlt() {
 }
 
 void calcRate() {
-  /* for (int i = rollIndex; i < ROLLAVGLENG - 1; i++) {
-    if (rollIndex > 0 && i + 1 >= ROLLAVGLENG - 1) {
-      avgRate += (rollAvg[0] - rollAvg[i]) / (period / 1000);
-      i = 0;
-    } else {
-      avgRate += (rollAvg[i + 1] - rollAvg[i]) / (period / 1000);
-    }
-  }
-  I think the below code will work better than what I was trying ot figure out above
-  for (int i = 0; i < ROLLAVGLENG - 1; i++) {
-    if (i + 1 == rollIndex) {
-      avgRate += (rollAvg[0] - rollAvg[ROLLAVGLENG - 1]) / (period / 1000);
-    } else {
-      avgRate += (rollAvg[i + 1] - rollAvg[i]) / (period / 1000);
-    }
-  }
-  /*
-  ______________________________________________________________
-  Once again need to rewrite this, change to using lastReadingMillis and write for not using the 
-  */
   for (int i = 1; i < ROLLAVGLENG - 1; i++) {
-    avgRate += (rollAvg[0] - rollAvg[ROLLAVGLENG - 1]) / (lastReadingMillis / 1000);
+    avgRate += (rollAvg[0] - rollAvg[ROLLAVGLENG - 1]) / (rollPeriod[i] / 1000);
   }
 
   avgRate /= ROLLAVGLENG - 1;

@@ -29,11 +29,12 @@ Latest Changes:
 - Changed `loop()` to use switch/case instead of `if else`
 - Moved `readAlt()` to the start of if statement instead of in each case
 
-- Added `ISDROGUE`, `ISAPOGEEDEPLOY` to user variables (I missed them in the last update)
+- Added `ISDROGUE` and `ISAPOGEEDEPLOY` to user variables (I missed them in the last update)
 - Added `DEPLOYALT` variable for setting the deployment altitude
 - Added `SAVEDATA` boolean to toggle saving data to flash
 - Added use of buzzer in `setup()` for indicating barometer found and setup complete
 - Added `landed` case to `loop()`
+- Added `rollPeriod` for use in velocity and acceleration calculations
 
 **V0.1 - "No Function Junction"**
 

@@ -34,7 +34,6 @@ float gndPres;                                                              //Pr
 float curAlt;                                                               //Current altitude
 float curPress;                                                             //Current pressure
 float rollAvg[ROLLAVGLENG];                                                 //Used to take a roling average of altitude data
-float
 float maxAlt;                                                               //Stores the max altitude 
 
 float avgAlt;                                                               //Altitude after using the rolling average
