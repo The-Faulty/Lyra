@@ -8,20 +8,42 @@
 void setup() {
   state = startUp;
 
-  flash.begin();
-  SD.begin(SD_CS);
+  pinMode(VOLT, INPUT);
+  pinMode(BUZZER, OUTPUT);
 
-  while (baro.connect() > 0) {
-    //indicate lack of connection like beeps
-    delay(100);
-  }
+  //USING DIGITAL WRITE TO CONTROL AN LED THAT WAS BODGED ONTO THE PIN
+  //tone(BUZZER, NOTE_E7, 200);
+  digitalWrite(BUZZER, HIGH);
+  delay(500);
+  digitalWrite(BUZZER, LOW);
+
+  do {
+    //tone(BUZZER, NOTE_C7, 200);
+    digitalWrite(BUZZER, HIGH);
+    delay(500);
+    digitalWrite(BUZZER, LOW);
+    delay(500);
+  } while (baro.connect() > 0);
+
+  baro.setSamples(MS5xxx_CMD_ADC_2048);
+  baro.setPressPa();                      //Set pressure readings to pascals (my preference and needed for the offset)
+  barometer.setDelay(10);
+
+  //Set the launch site offset
   baro.checkUpdates();
   while (!baro.isReady()); // just waiting for the readings
   gndPres = baro.GetPres();
   baro.setPOffset(gndPres);
 
-  pinMode(VOLT, INPUT);
-  
+  flash.begin();
+  SD.begin(SD_CS);
+
+  tone(BUZZER, NOTE_E7, 100);
+  delay(100);
+  tone(BUZZER, NOTE_E7, 100);
+
+  //Startup Complete!
+
   state = idle;
 }
 
@@ -29,73 +51,81 @@ void loop() {
   period = millis() - lastMillis;
   lastMillis = millis();
 
-  baro.checkUpdates();
+  if (millis() - lastReadingMillis >= 40) { 
+    baro.checkUpdates();
+    lastReadingMillis = millis();
+  }
   if (baro.isReady()) {
-    if (state == idle)
-    {
-      readAlt();
-      //should I put some logging in here? not really sure, I'll come back to it
-      if (avgAlt > MINALT) state = liftOff;
-    }
-    else if (state == liftOff) {
-      readAlt();
-      logData();
-      //detect burnout
-    }
-    else if (state == burnOut)
-    {
-      readAlt();
-      if (isApogee());
-    }
-    else if (state == apogee) {
-      //should this really be a state? maybe a boolean would fit better idk
-    }
-    else if (state == descent) {
-      //do stuff for average descent rate ---- make a descent rate function?
-    }
-    else if (state == drogue) {
-      //more descent rate calculations
-    }
-    else if (state == mains) {
-      //some detect landing function
+    readAlt();
+    calcRate();
+    switch (state) {
+      case idle:
+        //should I put some logging in here? not really sure, I'll come back to it
+        if (avgAlt > MINALT) state = liftOff;
+        break;
+      case liftOff:
+        logData();
+        //detect burnout
+        break;
+      case burnOut:
+        if (isApogee()) state = apogee;
+        break;
+      case apogee:
+        //should this really be a state? maybe a boolean would fit better idk
+        break;
+      case descent:
+        //do stuff for average descent rate ---- make a descent rate function?
+        break;
+      case drogue:
+        //more descent rate calculations
+        break;
+      case mains:
+        //some detect landing function
+        break;
+      case landed:
+        //finalize stuff
+        break;
     }
   }
-}
+} 
 
 void readAlt() {
   curAlt = baro.getAltitude(true);
-  rollAvg[rollIndex] = curAlt;
-  if (rollIndex >= 9) rollIndex = 0;
-  else rollIndex++;
+  avgAlt += curAlt;
 
-  for (int i = 0; i < ROLLAVGLENG - 1; i++) {
+  int bufferAlt[ROLLAVGLENG], bufferPeriod[ROLLAVGLENG];
+  bufferAlt[0] = curAlt;
+  bufferPeriod[0] = millis() - lastReadingMillis;
+
+  for (int i = 0; i < ROLLAVGLENG; i++) {
+    bufferAlt[i + 1] = rollAvg[i];
+    bufferPeriod[i + 1] = rollPeriod[i];
     avgAlt += rollAvg[i];
   }
+  memcpy(rollAvg, bufferAlt, sizeof(bufferAlt));
+  memcpy(rollPeriod, bufferPeriod, sizeof(bufferPeriod));
+
   avgAlt /= ROLLAVGLENG - 1;
 }
 
 void calcRate() {
-  /* for (int i = rollIndex; i < ROLLAVGLENG - 1; i++) {
-    if (rollIndex > 0 && i + 1 >= ROLLAVGLENG - 1) {
-      avgRate += (rollAvg[0] - rollAvg[i]) / (period / 1000);
-      i = 0;
-    } else {
-      avgRate += (rollAvg[i + 1] - rollAvg[i]) / (period / 1000);
-    }
+  for (int i = 1; i < ROLLAVGLENG - 1; i++) {
+    avgRate += (rollAvg[0] - rollAvg[ROLLAVGLENG - 1]) / (rollPeriod[i] / 1000);
   }
-  I think the below code will work better than what I was trying ot figure out above */
-  for (int i = 0; i < ROLLAVGLENG - 1; i++) {
-    if (i + 1 == rollIndex) {
-      avgRate += (rollAvg[0] - rollAvg[ROLLAVGLENG - 1]) / (period / 1000);
-    } else {
-      avgRate += (rollAvg[i + 1] - rollAvg[i]) / (period / 1000);
-    }
-  }
-  avgRate /= ROLLAVGLENG - 2;
+
+  avgRate /= ROLLAVGLENG - 1;
 }
 
-float getBattVoltage() {   //This doesnt need to be a function, but I think it will aid in code readability so why not
-  return analogRead(VOLT);
+void calcAccel() {
+  for (int i = 1; i < ROLLAVGLENG - 2; i++) {
+    avgAccel += (rollVelo[0] - rollVelo[ROLLAVGLENG - 1]) / (((rollPeriod[i] + rollPeriod[i + 1]) / 2) / 1000);
+  }
+
+  avgAccel /= ROLLAVGLENG - 2;
+}
+
+byte getBattVoltage() {   //This doesnt need to be a function, but I think it will aid in code readability so why not
+  return (byte) map(analogRead(VOLT), 0, 1023, 0, 8.4) * 10);
 }
 
 bool isApogee() {
@@ -107,12 +137,12 @@ bool isApogee() {
 }
 
 void logData() {
-  
   Logger d = {
-    curPress,
-    curAlt,
-    avgAlt,
-    avgRate,
+    (int) (curPress * 1000),
+    (int) (curAlt * 1000),
+    (int) (avgAlt * 1000),
+    (int) (avgRate * 1000),
+    (int) (avgAccel * 1000),
     state,
     getBattVoltage(),
     millis()
