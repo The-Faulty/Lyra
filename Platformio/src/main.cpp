@@ -17,13 +17,13 @@ void setup() {
   delay(500);
   digitalWrite(BUZZER, LOW);
 
-  while (baro.connect() > 0) {
+  do {
     //tone(BUZZER, NOTE_C7, 200);
     digitalWrite(BUZZER, HIGH);
     delay(500);
     digitalWrite(BUZZER, LOW);
     delay(500);
-  }
+  } while (baro.connect() > 0);
 
   baro.setSamples(MS5xxx_CMD_ADC_2048);
   baro.setPressPa();                      //Set pressure readings to pascals (my preference and needed for the offset)
@@ -51,7 +51,7 @@ void loop() {
   period = millis() - lastMillis;
   lastMillis = millis();
 
-  if (millis() - lastReadingMillis >= 100) { 
+  if (millis() - lastReadingMillis >= 40) { 
     baro.checkUpdates();
     lastReadingMillis = millis();
   }
@@ -68,7 +68,7 @@ void loop() {
         //detect burnout
         break;
       case burnOut:
-        if (isApogee());
+        if (isApogee()) state = apogee;
         break;
       case apogee:
         //should this really be a state? maybe a boolean would fit better idk
@@ -91,7 +91,7 @@ void loop() {
 
 void readAlt() {
   curAlt = baro.getAltitude(true);
-  rollPeriod
+  avgAlt += curAlt;
 
   int bufferAlt[ROLLAVGLENG], bufferPeriod[ROLLAVGLENG];
   bufferAlt[0] = curAlt;
@@ -100,14 +100,12 @@ void readAlt() {
   for (int i = 0; i < ROLLAVGLENG; i++) {
     bufferAlt[i + 1] = rollAvg[i];
     bufferPeriod[i + 1] = rollPeriod[i];
+    avgAlt += rollAvg[i];
   }
   memcpy(rollAvg, bufferAlt, sizeof(bufferAlt));
   memcpy(rollPeriod, bufferPeriod, sizeof(bufferPeriod));
 
-  /*for (int i = 0; i < ROLLAVGLENG - 1; i++) {
-    avgAlt += rollAvg[i];
-  }
-  avgAlt /= ROLLAVGLENG - 1;*/
+  avgAlt /= ROLLAVGLENG - 1;
 }
 
 void calcRate() {
@@ -118,8 +116,16 @@ void calcRate() {
   avgRate /= ROLLAVGLENG - 1;
 }
 
-float getBattVoltage() {   //This doesnt need to be a function, but I think it will aid in code readability so why not
-  return analogRead(VOLT);
+void calcAccel() {
+  for (int i = 1; i < ROLLAVGLENG - 2; i++) {
+    avgAccel += (rollVelo[0] - rollVelo[ROLLAVGLENG - 1]) / (((rollPeriod[i] + rollPeriod[i + 1]) / 2) / 1000);
+  }
+
+  avgAccel /= ROLLAVGLENG - 2;
+}
+
+byte getBattVoltage() {   //This doesnt need to be a function, but I think it will aid in code readability so why not
+  return (byte) map(analogRead(VOLT), 0, 1023, 0, 8.4) * 10);
 }
 
 bool isApogee() {
@@ -131,12 +137,12 @@ bool isApogee() {
 }
 
 void logData() {
-  
   Logger d = {
-    curPress,
-    curAlt,
-    avgAlt,
-    avgRate,
+    (int) (curPress * 1000),
+    (int) (curAlt * 1000),
+    (int) (avgAlt * 1000),
+    (int) (avgRate * 1000),
+    (int) (avgAccel * 1000),
     state,
     getBattVoltage(),
     millis()

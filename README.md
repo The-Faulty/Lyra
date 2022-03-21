@@ -22,6 +22,8 @@ Latest Changes:
 
 **V0.2 - "Hands up, Don't Chute!"**
 
+Notes: I think that most of the program is here, just need to do the loop logic. I also want to add data logging to the start of the flight.
+
 - Fixed typo of `stateMacine` to `stateMachine`
 - Fixed `state` being initialized as an integer instead of an instance of the `stateMachine` enum
 - Fixed lack of function prototypes
@@ -34,7 +36,8 @@ Latest Changes:
 - Added `SAVEDATA` boolean to toggle saving data to flash
 - Added use of buzzer in `setup()` for indicating barometer found and setup complete
 - Added `landed` case to `loop()`
-- Added `rollPeriod` for use in velocity and acceleration calculations
+- Added `rollPeriod` and `rollVelo` for use in velocity and acceleration calculations
+- Added `calcAccel` for acceleration
 
 **V0.1 - "No Function Junction"**
 

@@ -33,11 +33,13 @@ int lastReadingMillis;                                                      //La
 float gndPres;                                                              //Pressure at the launch site ground
 float curAlt;                                                               //Current altitude
 float curPress;                                                             //Current pressure
-float rollAvg[ROLLAVGLENG];                                                 //Used to take a roling average of altitude data
-float maxAlt;                                                               //Stores the max altitude 
+float rollAvg[ROLLAVGLENG];                                                 //Used to take a rolling average of altitude data
+float rollVelo[ROLLAVGLENG - 1];                                            //Used for acceleration calculations
 
+float maxAlt;                                                               //Stores the max altitude 
 float avgAlt;                                                               //Altitude after using the rolling average
-float avgRate;                                                              //Average Verticale speed
+float avgRate;                                                              //Average Vertical speed
+float avgAccel;                                                             //Average vertical acceleration
 int rollIndex = 0;                                                          //Used to loop through the 
 int timesLessThan = 0;                                                      //Used to ensure apogee has been reached, when over 10
 
@@ -46,8 +48,10 @@ uint32_t flashIndex = 0;                                                    //In
 //Function Prototypes
 void readAlt();
 void calcRate();
+void calcAccel();
 void logData();
 bool isApogee();
+byte getBattVoltage();
 
 enum stateMachine {                                                         //State machine 
   startUp,
@@ -65,12 +69,13 @@ stateMachine state;
 #pragma pack(1)                                                             //tells compiler to pack the variables together with no weird spacing issues that there would otherwise be
 
 struct LoggerVars {                                                         //Struct for data logging
-  float pressure;
-  float alt;
-  float filtAlt;
-  float rate;
-  int curState;
-  float battVolt;
+  int pressure;
+  int alt;
+  int filtAlt;
+  int rate;
+  int accel;
+  byte curState;
+  byte battVolt;
   uint32_t time;
 };
 
