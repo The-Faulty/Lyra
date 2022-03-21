@@ -27,7 +27,7 @@ void setup() {
 
   baro.setSamples(MS5xxx_CMD_ADC_2048);
   baro.setPressPa();                      //Set pressure readings to pascals (my preference and needed for the offset)
-  barometer.setDelay(10);
+  baro.setDelay(50);
 
   //Set the launch site offset
   baro.checkUpdates();
@@ -125,7 +125,7 @@ void calcAccel() {
 }
 
 byte getBattVoltage() {   //This doesnt need to be a function, but I think it will aid in code readability so why not
-  return (byte) map(analogRead(VOLT), 0, 1023, 0, 8.4) * 10);
+  return (byte) map(analogRead(VOLT), 0, 1023, 0, 8.4) * 10;
 }
 
 bool isApogee() {
