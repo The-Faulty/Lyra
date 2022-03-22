@@ -110,7 +110,8 @@ void readAlt() {
 
 void calcRate() {
   for (int i = 1; i < ROLLAVGLENG - 1; i++) {
-    avgRate += (rollAvg[0] - rollAvg[ROLLAVGLENG - 1]) / (rollPeriod[i] / 1000);
+    rollVelo[i - 1] = (rollAvg[0] - rollAvg[ROLLAVGLENG - 1]) / (rollPeriod[i] / 1000);
+    avgRate += rollVelo[i - 1];
   }
 
   avgRate /= ROLLAVGLENG - 1;
